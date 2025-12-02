@@ -1,6 +1,6 @@
 # quiz_app
 
-Create a Quiz App that contains:
+A Quiz App that contains:
 
 * Google Authentication (through Firebase) used to authenticate
 * Total 10 questions per Quiz
