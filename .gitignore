@@ -1,0 +1,7 @@
+# Flutter/Dart build files
+build/
+.dart_tool/
+*.apk
+*.so
+.flutter-plugins
+.flutter-plugins-dependencies
