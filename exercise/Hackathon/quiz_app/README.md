@@ -1,16 +1,15 @@
 # quiz_app
 
-A new Flutter project.
+Create a Quiz App that contains:
 
-## Getting Started
-
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+* Google Authentication (through Firebase) used to authenticate
+* Total 10 questions per Quiz
+    Q&A loaded from Firebase Firestore
+* Questions include
+    Multiple choice (one correct answer), True/False, Multiple choice (multiple correct answer)
+    Adjust the GUI dynamically based on Question Type
+* Show one question at a time (one question per screen)
+* Show questions in random order
+* Show score at the end (no need to show correct answers)
+* Store user specific quiz results in Firebase Firestore (for each Quiz user attempts)
+* Include a timer for 60 sec, no score if quiz times out
