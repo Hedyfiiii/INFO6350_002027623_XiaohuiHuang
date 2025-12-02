@@ -5,3 +5,10 @@ build/
 *.so
 .flutter-plugins
 .flutter-plugins-dependencies
+
+# macOS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
