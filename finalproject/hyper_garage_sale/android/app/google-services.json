@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "171815273670",
+    "project_id": "hypergaragesale-b7353",
+    "storage_bucket": "hypergaragesale-b7353.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:171815273670:android:3aaa2e9a1de066eb1803c7",
+        "android_client_info": {
+          "package_name": "com.example.hyper_garage_sale"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "171815273670-uedp4n34295ft2ubqmqbig223dfecc3s.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.hyper_garage_sale",
+            "certificate_hash": "4e3d8f436c089d0cd1d77b13050fe654a0debfe5"
+          }
+        },
+        {
+          "client_id": "171815273670-bs1h5t07oj3s4ntp5scgggd2034i4s6t.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyASXjTOXXlh_GE1dCjSrEyuRr9zqGgQRPM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "171815273670-bs1h5t07oj3s4ntp5scgggd2034i4s6t.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "171815273670-s91hadi688bp0ic14qmf4ngr2b8kc366.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.hyperGarageSale"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
