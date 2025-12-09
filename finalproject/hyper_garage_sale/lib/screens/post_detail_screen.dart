@@ -40,8 +40,9 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
           children: [
             // Image carousel
             if (widget.post.imageUrls.isNotEmpty)
-              SizedBox(
+              Container(
                 height: 300,
+                color: Colors.grey[200], // Background color for letterboxing
                 child: PageView.builder(
                   itemCount: widget.post.imageUrls.length,
                   onPageChanged: (index) {
@@ -50,29 +51,31 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                   itemBuilder: (context, index) {
                     return GestureDetector(
                       onTap: () => _viewFullScreenImage(index),
-                      child: Image.network(
-                        widget.post.imageUrls[index],
-                        fit: BoxFit.cover,
-                        loadingBuilder: (context, child, loadingProgress) {
-                          if (loadingProgress == null) return child;
-                          return Container(
-                            color: Colors.grey[300],
-                            child: Center(
-                              child: CircularProgressIndicator(
-                                value: loadingProgress.expectedTotalBytes != null
-                                    ? loadingProgress.cumulativeBytesLoaded /
-                                        loadingProgress.expectedTotalBytes!
-                                    : null,
+                      child: Center(
+                        child: Image.network(
+                          widget.post.imageUrls[index],
+                          fit: BoxFit.contain, // Changed from cover to contain
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return Container(
+                              color: Colors.grey[300],
+                              child: Center(
+                                child: CircularProgressIndicator(
+                                  value: loadingProgress.expectedTotalBytes != null
+                                      ? loadingProgress.cumulativeBytesLoaded /
+                                          loadingProgress.expectedTotalBytes!
+                                      : null,
+                                ),
                               ),
-                            ),
-                          );
-                        },
-                        errorBuilder: (context, error, stackTrace) {
-                          return Container(
-                            color: Colors.grey[300],
-                            child: const Icon(Icons.error, size: 50),
-                          );
-                        },
+                            );
+                          },
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              color: Colors.grey[300],
+                              child: const Icon(Icons.error, size: 50),
+                            );
+                          },
+                        ),
                       ),
                     );
                   },
@@ -149,14 +152,20 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                     const SizedBox(height: 16),
                     const Divider(),
                     const SizedBox(height: 16),
-                    const Text(
-                      'Categories',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    Row(
+                      children: [
+                        Icon(Icons.auto_awesome, size: 18, color: Colors.blue[700]),
+                        const SizedBox(width: 8),
+                        const Text(
+                          'Categories',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 12),
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
@@ -164,14 +173,14 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                         return Chip(
                           label: Text(category),
                           backgroundColor: Colors.blue[100],
-                          labelStyle: const TextStyle(
-                            color: Colors.blue,
+                          labelStyle: TextStyle(
+                            color: Colors.blue[900],
                             fontWeight: FontWeight.w500,
                           ),
-                          avatar: const Icon(
+                          avatar: Icon(
                             Icons.label,
                             size: 16,
-                            color: Colors.blue,
+                            color: Colors.blue[700],
                           ),
                         );
                       }).toList(),

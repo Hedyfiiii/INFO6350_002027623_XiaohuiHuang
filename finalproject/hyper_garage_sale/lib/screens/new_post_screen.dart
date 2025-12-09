@@ -1,8 +1,10 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:uuid/uuid.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:path_provider/path_provider.dart'; 
 import '../models/post.dart';
 import '../services/firestore_service.dart';
 import '../services/storage_service.dart';
@@ -44,60 +46,69 @@ class _NewPostScreenState extends State<NewPostScreen> {
   }
 
   Future<void> _showImageSourceDialog() async {
-    if (_images.length >= 4) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Maximum 4 images allowed'),
-          backgroundColor: Colors.orange,
+  if (_images.length >= 4) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Maximum 4 images allowed'),
+        backgroundColor: Colors.orange,
+      ),
+    );
+    return;
+  }
+
+  await showModalBottomSheet(
+    context: context,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
+    builder: (BuildContext context) {
+      return SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Add Photo',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 16),
+              ListTile(
+                leading: const Icon(Icons.camera_alt, color: Colors.blue),
+                title: const Text('Take Photo'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickImage(ImageSource.camera);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library, color: Colors.blue),
+                title: const Text('Choose from Gallery'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickImage(ImageSource.gallery);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.folder, color: Colors.blue),
+                title: const Text('Use Assets Image'),
+                subtitle: const Text('Load from app assets'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _showAssetImagePicker();
+                },
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
         ),
       );
-      return;
-    }
-
-    await showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (BuildContext context) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text(
-                  'Add Photo',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                ListTile(
-                  leading: const Icon(Icons.camera_alt, color: Colors.blue),
-                  title: const Text('Take Photo'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    _pickImage(ImageSource.camera);
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(Icons.photo_library, color: Colors.blue),
-                  title: const Text('Choose from Gallery'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    _pickImage(ImageSource.gallery);
-                  },
-                ),
-                const SizedBox(height: 8),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
+    },
+  );
+}
 
   Future<void> _pickImage(ImageSource source) async {
     try {
@@ -159,6 +170,142 @@ class _NewPostScreenState extends State<NewPostScreen> {
       }
     }
   }
+
+  Future<void> _loadAssetImage(String assetPath) async {
+  try {
+    if (_images.length >= 4) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Maximum 4 images allowed'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    // Load asset as bytes
+    final ByteData data = await rootBundle.load(assetPath);
+    final List<int> bytes = data.buffer.asUint8List();
+    
+    // Create temporary file
+    final tempDir = await getTemporaryDirectory();
+    final fileName = assetPath.split('/').last;
+    final file = File('${tempDir.path}/$fileName');
+    await file.writeAsBytes(bytes);
+
+    // Add image to list and show loading
+    setState(() {
+      _images.add(file);
+      _isClassifying = true;
+    });
+
+    // Classify the image with ML Kit
+    try {
+      final categories = await _mlKitService.classifyImage(file);
+      
+      setState(() {
+        // Add new unique categories
+        for (var category in categories) {
+          if (!_detectedCategories.contains(category)) {
+            _detectedCategories.add(category);
+          }
+        }
+        _isClassifying = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isClassifying = false;
+      });
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('ML classification failed: $e'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+    }
+  } catch (e) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error loading asset: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+}
+
+// Add this new method to show asset image picker
+Future<void> _showAssetImagePicker() async {
+  // List of your asset images
+  final assetImages = [
+    'assets/images/cup_1.jpeg',
+    'assets/images/cup_2.jpeg',
+    'assets/images/cup_3.jpeg',
+    'assets/images/cup_4.jpeg',
+    'assets/images/PS5_1.jpeg',
+    'assets/images/PS5_2.jpeg',
+    'assets/images/PS5_3.jpeg',
+    'assets/images/PS5_4.jpeg',
+  ];
+
+  await showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: const Text('Select Sample Image'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: GridView.builder(
+            shrinkWrap: true,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 8,
+              mainAxisSpacing: 8,
+            ),
+            itemCount: assetImages.length,
+            itemBuilder: (context, index) {
+              return GestureDetector(
+                onTap: () {
+                  Navigator.pop(context);
+                  _loadAssetImage(assetImages[index]);
+                },
+                child: Container(
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.blue),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.asset(
+                      assetImages[index],
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          color: Colors.grey[300],
+                          child: const Icon(Icons.error),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+        ],
+      );
+    },
+  );
+}
 
   void _removeImage(int index) {
     setState(() {
@@ -289,7 +436,55 @@ class _NewPostScreenState extends State<NewPostScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    // Products infomation
+                    const SizedBox(height: 18),
+                    TextFormField(
+                      controller: _titleController,
+                      decoration: const InputDecoration(
+                        labelText: 'Title',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.title),
+                        hintText: 'e.g., iPhone 15 Pro Max',
+                      ),
+                      validator: (value) =>
+                          value?.isEmpty ?? true ? 'Please enter a title' : null,
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _priceController,
+                      decoration: const InputDecoration(
+                        labelText: 'Price',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.attach_money),
+                        hintText: 'e.g., 999.99',
+                      ),
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      validator: (value) {
+                        if (value?.isEmpty ?? true) return 'Please enter a price';
+                        if (double.tryParse(value!) == null)
+                          return 'Please enter a valid number';
+                        if (double.parse(value) <= 0)
+                          return 'Price must be greater than 0';
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _descriptionController,
+                      decoration: const InputDecoration(
+                        labelText: 'Description',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.description),
+                        alignLabelWithHint: true,
+                        hintText: 'Describe your item in detail...',
+                      ),
+                      maxLines: 5,
+                      validator: (value) =>
+                          value?.isEmpty ?? true ? 'Please enter a description' : null,
+                    ),
+                    
                     // Image Section Header
+                    const SizedBox(height: 24),
                     Row(
                       children: [
                         const Icon(Icons.photo_library, color: Colors.blue),
@@ -313,7 +508,7 @@ class _NewPostScreenState extends State<NewPostScreen> {
                             icon: const Icon(Icons.delete_outline, size: 18),
                             label: const Text('Clear All'),
                             style: TextButton.styleFrom(
-                              foregroundColor: Colors.red,
+                              foregroundColor: Colors.grey,
                             ),
                           ),
                       ],
@@ -348,9 +543,9 @@ class _NewPostScreenState extends State<NewPostScreen> {
                                   child: GestureDetector(
                                     onTap: () => _removeImage(entry.key),
                                     child: Container(
-                                      padding: const EdgeInsets.all(4),
+                                      padding: const EdgeInsets.all(2),
                                       decoration: BoxDecoration(
-                                        color: Colors.red,
+                                        color: Colors.grey,
                                         shape: BoxShape.circle,
                                         boxShadow: [
                                           BoxShadow(
@@ -362,7 +557,7 @@ class _NewPostScreenState extends State<NewPostScreen> {
                                       child: const Icon(
                                         Icons.close,
                                         color: Colors.white,
-                                        size: 18,
+                                        size: 14,
                                       ),
                                     ),
                                   ),
@@ -454,6 +649,22 @@ class _NewPostScreenState extends State<NewPostScreen> {
                                 child: CircularProgressIndicator(strokeWidth: 2),
                               ),
                             ),
+                          const Spacer(),
+                          // Clear all categories button
+                          if (_detectedCategories.isNotEmpty && !_isClassifying)
+                            TextButton.icon(
+                              onPressed: () {
+                                setState(() {
+                                  _detectedCategories.clear();
+                                });
+                              },
+                              icon: const Icon(Icons.clear_all, size: 16),
+                              label: const Text('Clear All'),
+                              style: TextButton.styleFrom(
+                                foregroundColor: Colors.grey,
+                                padding: const EdgeInsets.symmetric(horizontal: 8),
+                              ),
+                            ),
                         ],
                       ),
                       const SizedBox(height: 8),
@@ -474,80 +685,63 @@ class _NewPostScreenState extends State<NewPostScreen> {
                                   ),
                                 ),
                               )
-                            : Wrap(
-                                spacing: 8,
-                                runSpacing: 8,
-                                children: _detectedCategories.map((category) {
-                                  return Chip(
-                                    label: Text(category),
-                                    backgroundColor: Colors.blue[100],
-                                    labelStyle: TextStyle(
-                                      color: Colors.blue[900],
-                                      fontWeight: FontWeight.w500,
+                            : _detectedCategories.isEmpty
+                                ? Center(
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(8.0),
+                                      child: Text(
+                                        'No categories detected yet',
+                                        style: TextStyle(
+                                          color: Colors.grey[600],
+                                          fontStyle: FontStyle.italic,
+                                        ),
+                                      ),
                                     ),
-                                    deleteIcon: const Icon(
-                                      Icons.close,
-                                      size: 18,
-                                    ),
-                                    deleteIconColor: Colors.blue[700],
-                                    onDeleted: () => _removeCategory(category),
-                                    avatar: Icon(
-                                      Icons.label,
-                                      size: 16,
-                                      color: Colors.blue[700],
-                                    ),
-                                  );
-                                }).toList(),
-                              ),
+                                  )
+                                : Wrap(
+                                    spacing: 8,
+                                    runSpacing: 8,
+                                    children: _detectedCategories.map((category) {
+                                      return Chip(
+                                        label: Text(category),
+                                        backgroundColor: Colors.blue[100],
+                                        labelStyle: TextStyle(
+                                          color: Colors.blue[900],
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                        deleteIcon: Container(
+                                          decoration: BoxDecoration(
+                                            color: Colors.grey.withOpacity(0.8),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: const Icon(
+                                            Icons.close,
+                                            size: 16,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                        onDeleted: () => _removeCategory(category),
+                                        avatar: Icon(
+                                          Icons.label,
+                                          size: 16,
+                                          color: Colors.blue[700],
+                                        ),
+                                        elevation: 2,
+                                        shadowColor: Colors.blue.withOpacity(0.3),
+                                      );
+                                    }).toList(),
+                                  ),
                       ),
-                    ],
-                    
-                    const SizedBox(height: 24),
-                    TextFormField(
-                      controller: _titleController,
-                      decoration: const InputDecoration(
-                        labelText: 'Title',
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.title),
-                        hintText: 'e.g., iPhone 15 Pro Max',
+                      const SizedBox(height: 8),
+                      Text(
+                        'Tap ✕ on a category to remove it',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey[600],
+                          fontStyle: FontStyle.italic,
+                        ),
                       ),
-                      validator: (value) =>
-                          value?.isEmpty ?? true ? 'Please enter a title' : null,
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _priceController,
-                      decoration: const InputDecoration(
-                        labelText: 'Price',
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.attach_money),
-                        hintText: 'e.g., 999.99',
-                      ),
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      validator: (value) {
-                        if (value?.isEmpty ?? true) return 'Please enter a price';
-                        if (double.tryParse(value!) == null)
-                          return 'Please enter a valid number';
-                        if (double.parse(value) <= 0)
-                          return 'Price must be greater than 0';
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _descriptionController,
-                      decoration: const InputDecoration(
-                        labelText: 'Description',
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.description),
-                        alignLabelWithHint: true,
-                        hintText: 'Describe your item in detail...',
-                      ),
-                      maxLines: 5,
-                      validator: (value) =>
-                          value?.isEmpty ?? true ? 'Please enter a description' : null,
-                    ),
-                    const SizedBox(height: 24),
+                      const SizedBox(height: 24),
                     ElevatedButton(
                       onPressed: _isLoading || _isClassifying ? null : _postClassified,
                       style: ElevatedButton.styleFrom(
@@ -567,7 +761,7 @@ class _NewPostScreenState extends State<NewPostScreen> {
                               ),
                             )
                           : const Text(
-                              'Post Classified',
+                              'Post',
                               style: TextStyle(
                                 fontSize: 16,
                                 color: Colors.white,
@@ -575,6 +769,7 @@ class _NewPostScreenState extends State<NewPostScreen> {
                               ),
                             ),
                     ),
+                    ],
                   ],
                 ),
               ),
