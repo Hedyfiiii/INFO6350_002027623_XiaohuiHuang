@@ -21,97 +21,6 @@ class BrowsePostsScreen extends StatefulWidget {
 class _BrowsePostsScreenState extends State<BrowsePostsScreen> {
   final FirestoreService _firestoreService = FirestoreService();
   final AuthService _authService = AuthService();
-  String? _lastPostId;
-
-  @override
-  void initState() {
-    super.initState();
-    
-    // Listen for new posts
-    _listenForNewPosts();
-  }
-
-  void _listenForNewPosts() {
-    _firestoreService.getAllPosts().listen((posts) {
-      if (posts.isNotEmpty) {
-        final latestPost = posts.first;
-        
-        // Check if this is a new post (not the initial load)
-        if (_lastPostId != null && _lastPostId != latestPost.id) {
-          // Show snackbar for new post
-          _showNewPostSnackBar(latestPost);
-        }
-        
-        // Update last post ID
-        _lastPostId = latestPost.id;
-      }
-    });
-  }
-
-  void _showNewPostSnackBar(Post post) {
-    if (!mounted) return;
-    
-    // Remove any existing snackbar
-    ScaffoldMessenger.of(context).removeCurrentSnackBar();
-    
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.new_releases, color: Colors.white),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'New Post Added!',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${post.title} - \$${post.price.toStringAsFixed(2)}',
-                    style: const TextStyle(fontSize: 14),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        backgroundColor: Colors.blue,
-        behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.only(
-          top: 80,
-          left: 10,
-          right: 10,
-        ),
-        duration: const Duration(seconds: 3),
-        action: SnackBarAction(
-          label: 'VIEW',
-          textColor: Colors.white,
-          backgroundColor: Colors.blue[700],
-          onPressed: () {
-            // Navigate to post detail
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => PostDetailScreen(post: post),
-              ),
-            );
-          },
-        ),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -155,11 +64,8 @@ class _BrowsePostsScreenState extends State<BrowsePostsScreen> {
                   ),
                 );
               } else if (value == 'my_posts') {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const BrowsePostsScreen(),
-                  ),
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('My posts coming soon!')),
                 );
               } else if (value == 'logout') {                
                 await _authService.signOut();
