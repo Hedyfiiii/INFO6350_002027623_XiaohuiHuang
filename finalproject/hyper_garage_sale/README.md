@@ -47,7 +47,6 @@ HyperGarageSale is a full-stack mobile and web application that allows users to 
 ### Notifications
 - **New Post Alerts** - Top banner notification when new items are posted
 - **Action Notifications** - Success/error messages for all operations
-- **Interactive Notifications** - "VIEW" button to quickly access new posts
 
 ### Content Management
 - **Delete Posts** - Remove your own listings
@@ -160,7 +159,6 @@ Before you begin, ensure you have:
 
 #### Real-time Updates
 - New posts appear automatically with a notification banner
-- Tap **"VIEW"** on notification to see the new post
 - All changes sync instantly across devices
 
 ## Key Workflows
